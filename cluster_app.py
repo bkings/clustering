@@ -21,6 +21,7 @@ except:
 
 
 kmeans, vectorizer, X, df = cluster.train_model(docs)
+cluster_profiles = cluster.label_clusters(kmeans, vectorizer, docs, df)
 
 tab1, tab2, tab3 = st.tabs(["Cluster New Document", "Results", "Sample Docs"])
 
@@ -43,7 +44,18 @@ with tab1:
         pred_cluster, conf = cluster.predict_cluster(
             new_document.strip(), kmeans, vectorizer
         )
-        st.success(f"**Predicted Cluster: {pred_cluster}** (Confidence: {conf:.2f})")
+        profile = cluster_profiles[pred_cluster]
+        st.success(
+            f"**Predicted Cluster: ({profile['cluster_id']}) {profile['label']}** (Confidence: {conf:.1%} | Docs: {profile['doc_count']})"
+        )
+
+        with st.expander("Cluster Profile"):
+            st.write(
+                f"**Top Keywords**: {', '.join(str(item) for item in profile['top_words'][:8])}"
+            )
+            st.write(f"**Majority Category**: {profile['majority_category']}")
+            st.write("**Sample Doc**:")
+            st.caption(profile["sample_doc"])
 
         # Robustness test cases
         tests = {

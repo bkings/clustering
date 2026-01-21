@@ -10,11 +10,11 @@ FETCH_URL = "https://newsapi.org/v2/everything"
 API_KEY = "cc28d4855f404ad582cd1dbb20fcda41"
 
 
-def fetch_category_data(category: str, count: int = 40) -> list:
+def fetch_category_data(category: str, source: str, count: int = 40) -> list:
 
     params = {
-        "q": category,
-        "sources": "bbc-news,abc-news",
+        # "q": category,
+        "sources": source,
         "language": "en",
         "sortBy": "publishedAt",
         "pageSize": 50,
@@ -56,11 +56,16 @@ def collect():
     all_docs = []
 
     with st.status("Loading file ...") as status:
+        category_mapping = {
+            "business": "bloomberg",
+            "entertainment": "buzzfeed",
+            "health": "medical-news-today",
+        }
 
-        for category in ["business", "entertainment", "health"]:
-            status.update(label=f"Fetching {category} ...")
-            print(f"Fetching {category}")
-            docs = fetch_category_data(category)
+        for category, source in category_mapping.items():
+            status.update(label=f"Fetching from {source} ...")
+            print(f"Fetching from {source}")
+            docs = fetch_category_data(category, source)
             all_docs.extend(docs)
             time.sleep(1)
 
@@ -71,5 +76,9 @@ def collect():
             json.dump(all_docs, f, indent=2)
 
         print(f"Saved {len(all_docs)} articles to {JSON_FILE}")
-        status.update(label="Saved articles to file. Reload to proceed!", state="complete", expanded=False)
+        status.update(
+            label="Saved articles to file. Reload to proceed!",
+            state="complete",
+            expanded=False,
+        )
         st.stop()
