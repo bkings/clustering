@@ -46,12 +46,12 @@ with tab1:
         )
         profile = cluster_profiles[pred_cluster]
         st.success(
-            f"**Predicted Cluster: ({profile['cluster_id']}) {profile['label']}** (Confidence: {conf:.1%} | Docs: {profile['doc_count']})"
+            f"**Predicted Cluster: ({profile['cluster_id']}) {profile["majority_category"]}** (Confidence: {conf:.1%} | Docs: {profile['doc_count']})"
         )
 
         with st.expander("Cluster Profile"):
             st.write(
-                f"**Top Keywords**: {', '.join(str(item) for item in profile['top_words'][:8])}"
+                f"**Top Keywords**: {', '.join(str(item) for item in profile['top_words'][:12])}"
             )
             st.write(f"**Majority Category**: {profile['majority_category']}")
             st.write("**Sample Doc**:")
@@ -59,17 +59,20 @@ with tab1:
 
         # Robustness test cases
         tests = {
-            "Entertainment": "Oscars 2026 best picture nominees announced.",
-            "Health": "New vaccine reduces flu cases by 70%.",
-            "Hard Short": "Flu shot",
-            "Hard No Stop": "the a vaccine works great",
-            "Mixed": "Movie profits boost UK economy",
-            "Business": "Elon musk becomes the most richest businessman in the world",
+            "Entertainment": "Animation labs creation",
+            "Health": "New vaccine reduces flu that are on rise",
+            "Short": "Blood pressure levels",
+            "Business": "Silver and gold prices hike",
+            "Mixed": "Movie profits boost overall financial state",
+            "Specific long query with stop words": "latest movie reviews that were above average and most people enjoyed watching today but did not yesterday",
         }
         st.subheader("Test Cases")
         for label, test in tests.items():
             pred, conf = cluster.predict_cluster(test, kmeans, vectorizer)
-            st.write(f"**{label}**: {test} - Cluster {pred} ({conf:.2f})")
+            clus_profile = cluster_profiles[pred]
+            st.write(
+                f"**{label}**: {test} - Cluster {pred} '{clus_profile['majority_category']}'"
+            )
 
 with tab2:
     st.header("Clustering quality")
@@ -100,10 +103,11 @@ with tab2:
 
 with tab3:
     st.header("Sample documents")
-    for cluster in df["cluster"].unique():
+    for cluster in sorted(set(df["cluster"])):
         st.subheader(f"Cluster {cluster}")
-        cluster_docs = df[df["cluster"] == cluster].head(3)
-        for _, row in cluster_docs.iterrows():
-            st.write(f"**{row['category']}**: {row['text']}")
+        with st.container(height=300):
+            cluster_docs = df[df["cluster"] == cluster].head(30)
+            for _, row in cluster_docs.iterrows():
+                st.write(f"**{row['category']}**: {row['text']}")
 
 st.markdown("---")

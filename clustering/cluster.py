@@ -13,6 +13,7 @@ from sklearn.cluster import KMeans
 
 class Cluster:
 
+    k = 6
     nltk.download("stopwords", quiet=True)
     STOP_WORDS = set(stopwords.words("english"))
     stemmer = PorterStemmer()
@@ -23,7 +24,7 @@ class Cluster:
     def label_clusters(_self, kmeans, vectorizer, docs, df):
         cluster_profiles = {}
 
-        for cluster_id in range(3):
+        for cluster_id in range(Cluster.k):
             cluster_df = df[df["cluster"] == cluster_id]
             if cluster_df.empty:
                 continue
@@ -36,7 +37,7 @@ class Cluster:
             if cluster_texts:
                 vec_cluster = vectorizer.transform(cluster_texts)
                 feature_names = vectorizer.get_feature_names_out()
-                top_indices = vec_cluster.sum(axis=0).argsort()[0, -10:][::-1]
+                top_indices = vec_cluster.sum(axis=0).argsort()[0, -20:][::-1]
                 top_words = [feature_names[i] for i in top_indices]
             else:
                 top_words = []
@@ -77,7 +78,7 @@ class Cluster:
         st.sidebar.write("Dataset:", categories.to_dict())
         return docs
 
-    @st.cache_data
+    # @st.cache_data
     def preprocess(_self, text):
         text = re.sub(r"[^\w\s]", " ", text.lower())
         tokens = text.split()
@@ -90,32 +91,32 @@ class Cluster:
 
     # @st.cache_data
     def train_model(_self, docs):
-        k = 3
         texts = [_self.preprocess(d["text"]) for d in docs]
         vectorizer = TfidfVectorizer(
             max_features=5000, max_df=0.8, min_df=2, ngram_range=(1, 2)
         )
         X = vectorizer.fit_transform(texts)
 
-        kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+        kmeans = KMeans(n_clusters=Cluster.k, random_state=42, n_init=10)
         clusters = kmeans.fit_predict(X)
 
         print(np.bincount(clusters))
+        print(clusters)
 
         df = pd.DataFrame(
             {
-                "text": [d["text"][:100] + "..." for d in docs],
+                "text": [d["text"][:150] + "..." for d in docs],
                 "category": [d["category"] for d in docs],
                 "cluster": clusters,
             }
         )
-        print(df[50:])
         return kmeans, vectorizer, X, df
 
     def predict_cluster(self, query: str, kmeans, vectorizer: TfidfVectorizer):
         query = self.preprocess(query)
         vec = vectorizer.transform([query])
         distances = kmeans.transform(vec)[0]
+        print(distances)
         cluster = kmeans.predict(vec)[0]
         confidence = 1 - (distances[cluster] / np.max(distances))
         return cluster, confidence

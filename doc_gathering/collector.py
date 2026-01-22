@@ -10,7 +10,7 @@ FETCH_URL = "https://newsapi.org/v2/everything"
 API_KEY = "cc28d4855f404ad582cd1dbb20fcda41"
 
 
-def fetch_category_data(category: str, source: str, count: int = 40) -> list:
+def fetch_category_data(category: str, source: str, count: int = 50) -> list:
 
     params = {
         # "q": category,
@@ -20,6 +20,9 @@ def fetch_category_data(category: str, source: str, count: int = 40) -> list:
         "pageSize": 50,
         "apikey": API_KEY,
     }
+
+    if source == "bbc-news":
+        params = {**params, "q": category}
 
     articles = []
     page = 1
@@ -57,17 +60,18 @@ def collect():
 
     with st.status("Loading file ...") as status:
         category_mapping = {
-            "business": "bloomberg",
-            "entertainment": "buzzfeed",
-            "health": "medical-news-today",
+            "business": "bloomberg,the-wall-street-journal",
+            "entertainment": "buzzfeed, mashable,ign",
+            "health": "medical-news-today, bbc-news",
         }
 
-        for category, source in category_mapping.items():
-            status.update(label=f"Fetching from {source} ...")
-            print(f"Fetching from {source}")
-            docs = fetch_category_data(category, source)
-            all_docs.extend(docs)
-            time.sleep(1)
+        for category, sources in category_mapping.items():
+            for source in sources.split(","):
+                status.update(label=f"Fetching from {source} ...")
+                print(f"Fetching from {source}")
+                docs = fetch_category_data(category, source)
+                all_docs.extend(docs)
+                time.sleep(1)
 
         # SAVE
         JSON_FILE.parent.mkdir(exist_ok=True)
